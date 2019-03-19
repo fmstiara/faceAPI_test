@@ -1,3 +1,7 @@
+const HOST = 'https://japaneast.api.cognitive.microsoft.com/face/v1.0/'
+const PERSON_GROUP_ID = 'test-members'
+const API_KEY = ''
+
 window.onload = ()=>{
   const video = document.getElementById('video');
   const constraints = {
@@ -40,15 +44,13 @@ function getImageFromVideo(video){
 function detect(image_url){
   fetch(image_url).then(res => res.blob())
   .then(blobData => {
-      console.log(blobData)
-
-      const url = "https://westcentralus.api.cognitive.microsoft.com/face/v1.0/detect?returnFaceId=true"
+      const url = HOST + "detect?returnFaceId=true"
 
       $.ajax({
         url: url,
         contentType: "application/octet-stream",
         headers: {
-        'Ocp-Apim-Subscription-Key': ""
+        'Ocp-Apim-Subscription-Key': API_KEY
         },
         type: "POST",
         processData: false,
@@ -56,9 +58,41 @@ function detect(image_url){
       })
       .done(function(data) {
           console.log(data)
+          let faceIds = []
+          data.forEach(v => {
+            faceIds.push(v["faceId"])
+          })
+          console.log(faceIds)
+          identify(faceIds)
       })
       .fail(function(err) {
           console.error(err);
       })
   });
+}
+
+function identify(faceIds = []){
+  const url = HOST + "identify"
+
+  $.ajax({
+    url: url,
+    contentType: "application/json",
+    headers: {
+    'Ocp-Apim-Subscription-Key': API_KEY
+    },
+    type: "POST",
+    processData: false,
+    data: JSON.stringify({
+      personGroupId: PERSON_GROUP_ID,
+      faceIds: faceIds,
+      maxNumOfCandidatesReturned: 100,
+      confidenceThreshold: 0.5
+    })
+  })
+  .done(function(data) {
+      console.log(data)
+  })
+  .fail(function(err) {
+      console.error(err);
+  })
 }

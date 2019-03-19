@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>JSSample</title>
+    <script
+    src="http://code.jquery.com/jquery-3.3.1.min.js"
+    integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+    crossorigin="anonymous"></script>
+</head>
+<body>
+<div>
+  <input id="name" />
+  <button id="name-submit">名前登録</button>
+</div>
+
+
+<div>
+  <input id="image" type="file" accept="image/*">
+  <button id="image-submit" disabled>登録</button>
+</div>
+
+<div>
+  <button id="train-submit">学習</button>
+</div>
+
+<script type="text/javascript">
+const HOST = 'https://japaneast.api.cognitive.microsoft.com/face/v1.0/'
+const PERSON_GROUP_ID = 'test-members'
+const API_KEY = ''
+
+window.onload = function(){
+  const nameInput = document.getElementById('name')
+  const imageInput = document.getElementById('image')
+  const nameButton = document.getElementById('name-submit')
+  const imageButton = document.getElementById('image-submit')
+  const trainButton = document.getElementById('train-submit')
+
+  let image = ''
+  let personId = ''
+
+  nameButton.onclick = function(){
+    const name = nameInput.value
+    const createPersonURL = HOST+'persongroups/'+PERSON_GROUP_ID+'/persons'
+    $.ajax({
+      url: createPersonURL,
+      contentType: "application/json",
+      headers: {
+      'Ocp-Apim-Subscription-Key': API_KEY
+      },
+      type: "POST",
+      data: JSON.stringify({name: name})
+    })
+    .done(function(data) {
+        personId = data["personId"]
+        nameButton.disabled = true
+    })
+    .fail(function(err) {
+        console.error(err);
+    })
+  }
+
+  imageInput.onchange = function(e){
+    const reader = new FileReader()
+
+    reader.onload = function(e){
+      image = e.target.result
+      imageButton.disabled = false
+    }
+
+    reader.readAsDataURL(e.target.files[0])
+  }
+
+  imageButton.onclick = function(){
+    fetch(image).then(res => res.blob())
+      .then(blobData => {
+        addPersonImage(personId, blobData)
+        imageButton.disabled = true
+      });
+  }
+
+  trainButton.onclick = function(){
+    const url = HOST + 'persongroups/'+PERSON_GROUP_ID+'/train'
+    $.ajax({
+      url: url,
+      headers: {
+      'Ocp-Apim-Subscription-Key': API_KEY
+      },
+      type: "POST"
+    })
+    .done(res => console.log(res))
+    .fail(err => console.error(err))
+  }
+}
+
+function addPersonImage(personId, blobData){
+  console.log(personId, blobData)
+
+  const url = HOST + 'persongroups/'+PERSON_GROUP_ID+'/persons/'+personId+'/persistedFaces'
+  $.ajax({
+    url: url,
+    contentType: "application/octet-stream",
+    headers: {
+    'Ocp-Apim-Subscription-Key': API_KEY
+    },
+    type: "POST",
+    processData: false,
+    data: blobData
+  })
+  .done(function(data) {
+      console.log(data)
+  })
+  .fail(function(err) {
+      console.error(err);
+  })
+}
+</script>
+</body>
+</html>
